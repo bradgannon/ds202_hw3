@@ -1,0 +1,116 @@
+---
+title: "HW3"
+output: html_document
+---
+
+Load data, ggplot2:
+```{r}
+data(tips, package="reshape2")
+library("ggplot2")
+```
+
+##1.
+```{r}
+numParty <- nrow(tips)
+numParty
+```
+
+It appears that there were 244 parties served by the waiter.
+
+##2.
+```{r}
+str(tips)
+```
+
+You can see here that there are numbers, strings, and ints in this data frame.
+
+##3.
+```{r}
+tips$day <- factor(tips$day, levels = c("Mon", "Tues", "Wed", "Thur", "Fri", "Sat", "Sun"))
+day <- tips[order(tips$day), "day"]
+day
+```
+
+##4.
+```{r}
+female <- tips[(tips$sex == 'Female'),]
+female5 <- female[(female$size >= 5),]
+female5
+```
+
+##5.
+```{r}
+ggplot(tips, aes(x=tip, y=total_bill)) + geom_point() + stat_ellipse(type="norm") + ggtitle("Tip Amount vs. Total Bill") + theme(plot.title=element_text(hjust=0.5))
+```
+
+I included an ellipse around the normal data to show help explain anomalies. In general, the relationship here is that, as the total bill increases, tip rate also increases. Two anomalies I see in this graph would be some of the points that are closer to 0 on the x-axis, but higher on the y-axis, near the $30-40 range. These are very low tips, especially for the trend shown in this scatterplot. Another anomaly would be the point that is at approximately (5.2, 7.5) here. This tip is of a very high percentage of the total bill, which makes it out of the ordinary here.
+
+##6.
+```{r}
+tips$tiprate <- tips$tip / tips$total_bill
+head(tips, 10) # to show new column
+avgTip <- mean(tips$tiprate)
+avgTip # average tip rate is approximately 16%
+```
+
+##7.
+```{r}
+tips$time <- factor(tips$time, levels = c("Lunch", "Dinner"))
+temp <- tips[order(tips$time),] # to hold new ordering
+p <- ggplot(temp, aes(x=time, y=tiprate)) + geom_boxplot(outlier.color="red", outlier.shape=8, outlier.size=2)
+p <- p + ggtitle("Time of Day vs. Tip Rate") + theme(plot.title=element_text(hjust=0.5))
+p
+```
+
+##8
+The relation between tip and total bill here is easily represented by the tiprate column, however I will use both for the scatterplots. From here I will try and find meaning between smoking and gender of person who pays to the tip rate. I used the ggpubr library, which I found useful during an internship I had this past summer. It is helpful for arranging graphs.
+```{r}
+library("ggpubr")
+
+# I had to make some dataframes so these scatterplots could be created easier
+
+female <- tips[(tips$sex == 'Female'),]
+f_noSmoke <- female[(female$smoker == 'No'),]
+f_yesSmoke <- female[(female$smoker == 'Yes'),]
+male <- tips[(tips$sex == 'Male'),]
+m_noSmoke <- male[(male$smoker == "No"),]
+m_yesSmoke <- male[(male$smoker == "Yes"),]
+
+# Now making scatterplots to then turn into a grid
+
+f_no <- ggplot(f_noSmoke, aes(x=tip, y=total_bill)) + geom_point() + geom_smooth()
+f_yes <- ggplot(f_yesSmoke, aes(x=tip, y=total_bill)) + geom_point() + geom_smooth()
+m_no <- ggplot(m_noSmoke, aes(x=tip, y=total_bill)) + geom_point() + geom_smooth()
+m_yes <- ggplot(m_yesSmoke, aes(x=tip, y=total_bill)) + geom_point() + geom_smooth()
+
+# Using ggarrange to organize into grid
+
+plots <- ggarrange(m_no, m_yes, f_no, f_yes, labels=c("Male Non-Smoker", "Male Smoker", "Female Non-Smoker", "Female Smoker"), font.label=list(size = 10, color="black"), ncol=2,nrow=2)
+plots
+```
+
+From this result, here are my interpretations:
+I think that females, when paying, tend to have lower overall bills and therefore lower tips. However, it seems that they have a lower tip rate. A flatter regression line will show that the tip rate is higher, and both male smokers and non-smokers exhibit a flatter lines than their female counterparts, which implies a higher tip rate. When looking at smoking specifically, it appears that the smokers tend to tip better than non-smokers, based on the shape of the regression lines. Overall, there is some interesting information to draw from these graphs, which is easy to compare when they are side-by-side.
+
+##9.
+I decided to use a bar plot to describe and analyze this data.
+```{r}
+# First creating a vector of numerical values so the bar plot has some meaning (can reuse male, female dataframes from earlier)
+
+fT <- female[(female$day == "Thur"),]
+fF <- female[(female$day == "Fri"),]
+fSa <- female[(female$day == "Sat"),]
+fSu <- female[(female$day == "Sun"),]
+mT <- male[(male$day == "Thurs"),]
+mF <- male[(male$day == "Fri"),]
+mSa <- male[(male$day == "Sat"),]
+mSu <- male[(male$day == "Sun"),]
+
+yvals <- c(nrow(fT),nrow(mT),nrow(fF),nrow(mF),nrow(fSa),nrow(mSa),nrow(fSu),nrow(mSu))
+xvals <- c("female_Thurs","male_Thurs","female_Fri","male_Fri","female_Sat","male_Sat","female_Sun","male_Sun")
+toPlot <- data.frame("Days" = xvals, "Number" = yvals)
+positions <- c("female_Thurs","male_Thurs","female_Fri","male_Fri","female_Sat","male_Sat","female_Sun","male_Sun")
+ggplot(toPlot, aes(Days, Number)) + geom_bar(stat="identity") + scale_x_discrete(limits=positions)
+```
+
+From this graph, I can see that the percentage of females paying is much higher during the week, but males paying over the weekend is drastically higher.
